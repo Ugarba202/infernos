@@ -24,3 +24,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Project Documentation and Plans (Do not push to production)
+INFERNOS_TECHNICAL.md
+INFERNOS_TIMELINE.md
+implementation_plan_infernos*
+Infernos_Project_Documentation.docx

@@ -1,13 +1,12 @@
-# Infernos Caller / Agent Configuration Example
+# ==============================================================================
+# Infernos Client Configuration (Example)
+# ==============================================================================
 
-[client]
-# Target Infernos Node endpoint
+# The URL of the Infernos node to connect to.
+# Default: "http://127.0.0.1:8080"
 node_url = "http://127.0.0.1:8080"
 
-[budget]
-# Maximum session budget limit in Satoshis for multi-step agent tasks
+# The maximum budget in Satoshis (sats) that the client is allowed to spend
+# for a single session. This acts as a safety guard to prevent draining funds.
+# Default: 1000
 max_budget_sats = 1000
-
-[lightning]
-# Payment method for automated L402 invoice settlement: "mock", "lnd", or "nwc"
-payment_backend = "mock"
