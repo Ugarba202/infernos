@@ -56,30 +56,108 @@ flowchart TB
 
 ## Quick Start
 
-### 1. Build and Run
+### 1. Build and Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/infernos-ai/infernos.git
-cd infernos
+git clone git@github.com:infernos-ai/infernos.git
+cd infernos-ai
 
-# Check and build with Cargo
+# Build the release binary
 cargo build --release
 ```
 
-### 2. Run Operator Node
+---
 
+### 2. Running as an Operator (Node)
+
+Turn your machine running local open-weights into a paid inference endpoint.
+
+#### Step A: Configure Node
+Copy the example configuration:
 ```bash
-# Start the node with configuration
-cargo run -- node start --config config/node.example.toml
+cp config/node.example.toml config/node.toml
+```
+Configure your upstream inference runtime (`http://127.0.0.1:11434` for Ollama), model pricing in sats, and your Lightning backend (`mock` for local dev/testing, `lnd`, or `nwc`).
+
+#### Step B: Start the Node
+```bash
+# Start via CLI
+cargo run -- node start --config config/node.toml
+
+# Or using the built release binary
+./target/release/infernos node start --config config/node.toml
 ```
 
-### 3. Make an Inference Call
+#### Step C: Manage Node Operator Lifecycle
+```bash
+# Check node earnings, active sessions, and served models
+cargo run -- node status
+
+# Gracefully stop the running node
+cargo run -- node stop
+```
+
+#### Option: Run with Docker Compose
+To run both the Infernos Node and an Ollama instance together:
+```bash
+docker compose -f docker/docker-compose.yml up
+```
+
+---
+
+### 3. Using as a Caller / Autonomous Agent
+
+Consume inference without creating accounts or acquiring centralized API keys.
+
+#### Method A: Command-Line Interface (CLI)
 
 ```bash
-# Query the node as a caller
-cargo run -- call --endpoint http://127.0.0.1:8080 --model llama3 --prompt "Explain the Lightning Network"
+# Pay-per-request query
+cargo run -- call \
+  --endpoint http://127.0.0.1:8080 \
+  --model llama3 \
+  --prompt "Explain the Lightning Network"
+
+# Autonomous query with strict Session Budget protection (e.g. 500 Sats)
+cargo run -- call \
+  --endpoint http://127.0.0.1:8080 \
+  --model llama3 \
+  --budget 500 \
+  --prompt "Analyze this smart contract and summarize vulnerabilities"
 ```
+
+#### Method B: Rust SDK / Agent Integration
+
+Embed Infernos directly into your autonomous agents:
+
+```rust
+use infernos::client::InfernosClient;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize client pointing to any Infernos node
+    let client = InfernosClient::new("http://127.0.0.1:8080")
+        .with_budget(500); // Strict session budget in satoshis
+
+    // Automatically negotiates L402 challenge, settles invoice, and returns completion
+    let response = client
+        .chat("Explain the difference between L402 and API keys.")
+        .await?;
+
+    println!("Agent response:\n{}", response);
+    Ok(())
+}
+```
+
+#### Method C: OpenAI-Compatible HTTP Endpoint
+
+Infernos exposes standard OpenAI-compatible endpoints:
+- `POST /v1/chat/completions` (L402-gated)
+- `GET /v1/models` (Model capabilities & per-model pricing in sats)
+- `GET /health` (Node health status)
+
+Any existing agent framework (LangChain, AutoGen, CrewAI, or official OpenAI SDKs) can consume Infernos by handling standard HTTP 402 payment challenges or using an L402 proxy.
 
 ---
 
