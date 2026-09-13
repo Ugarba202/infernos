@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::common::error::Result;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait LightningBackend: Send + Sync {

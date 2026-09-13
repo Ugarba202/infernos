@@ -13,6 +13,9 @@ impl L402Challenge {
     }
 
     pub fn to_header_value(&self) -> String {
-        format!("L402 token=\"{}\", invoice=\"{}\"", self.macaroon, self.invoice)
+        format!(
+            "L402 token=\"{}\", invoice=\"{}\"",
+            self.macaroon, self.invoice
+        )
     }
 }

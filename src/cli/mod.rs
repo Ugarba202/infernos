@@ -4,7 +4,11 @@ pub mod node;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(name = "infernos", version, about = "Permissionless Open-Model Inference Paid in Sats via L402")]
+#[command(
+    name = "infernos",
+    version,
+    about = "Permissionless Open-Model Inference Paid in Sats via L402"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
