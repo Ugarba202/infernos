@@ -1,0 +1,29 @@
+# Infernos Node Operator Configuration Example
+
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[upstream]
+# Address of local Ollama or OpenAI-compatible engine
+url = "http://127.0.0.1:11434"
+
+[pricing]
+# Default base price per request in Satoshis
+default_price_sats = 10
+
+[lightning]
+# Lightning backend type: "mock", "lnd", or "nwc"
+backend = "mock"
+
+# LND Configuration (if backend = "lnd")
+# lnd_rpc_host = "localhost:10009"
+# lnd_macaroon_path = "~/.lnd/data/chain/bitcoin/mainnet/admin.macaroon"
+# lnd_tls_cert_path = "~/.lnd/tls.cert"
+
+# Nostr Wallet Connect (if backend = "nwc")
+# nwc_uri = "nostr+walletconnect://..."
+
+[privacy]
+# Strict zero-prompt-logging (always true in production)
+log_prompts = false
