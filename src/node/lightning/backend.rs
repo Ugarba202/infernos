@@ -18,6 +18,12 @@ pub struct MockLightningBackend {
     settled_invoices: Arc<Mutex<HashMap<String, bool>>>,
 }
 
+impl Default for MockLightningBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockLightningBackend {
     pub fn new() -> Self {
         Self {
@@ -36,12 +42,12 @@ impl MockLightningBackend {
 #[async_trait]
 impl LightningBackend for MockLightningBackend {
     async fn create_invoice(&self, amount_sats: Satoshis, _memo: &str) -> Result<Invoice> {
-        let payment_hash_str = Uuid::new_v4().to_string().replace("-", ""); 
+        let payment_hash_str = Uuid::new_v4().to_string().replace("-", "");
         let invoice_str = format!("lnbc{}mock{}", amount_sats.0, payment_hash_str);
-        
+
         let mut lock = self.settled_invoices.lock().await;
         lock.insert(payment_hash_str.clone(), false);
-        
+
         Ok(Invoice {
             bolt11: invoice_str,
             payment_hash: PaymentHash(payment_hash_str),
