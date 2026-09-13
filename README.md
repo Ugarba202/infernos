@@ -21,17 +21,35 @@ Infernos turns any machine running open-weight AI models into a self-sovereign, 
 
 ## Architecture Overview
 
-```
-Caller (Agent / User)
-       │
-       ▼  HTTP Request
-  [ Axum Node ]
-       │
-       ▼
- [ L402 Gate ] ◄───► [ Lightning Backend (LND / NWC / Mock) ]
-       │
-       ▼ Verified Proof
-[ Reverse Proxy ] ───► [ Ollama / Upstream Engine ]
+```mermaid
+flowchart TB
+    subgraph Caller Side
+        C[Caller<br/>Human or Agent]
+        W[Lightning Wallet]
+    end
+
+    subgraph Infernos Node
+        G[L402 Gate]
+        E[Inference Engine<br/>Ollama / vLLM / llama.cpp]
+        H[Hardware<br/>GPU / CPU]
+    end
+
+    subgraph Operator Side
+        L[Lightning Node]
+        M[Models]
+    end
+
+    C -->|1. Request| G
+    G -->|2. 402 + Invoice| C
+    C -->|3. Pay| W
+    W -->|Payment| L
+    C -->|4. Retry with proof| G
+    G -->|5. Forward| E
+    E -->|6. Completion| G
+    G -->|7. Response| C
+    E --> H
+    L --> G
+    M --> E
 ```
 
 ---
