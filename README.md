@@ -177,7 +177,7 @@ Any existing agent framework (LangChain, AutoGen, CrewAI, or official OpenAI SDK
 
 - **Muhammad Hamza**
   - Email: [hamza.00dev1@gmail.com](mailto:hamza.00dev1@gmail.com)
-  - GitHub: [@hamza00dev1](https://github.com/hamza00dev1)
+  - GitHub: [@Hamza1610](https://github.com/Hamza1610)
   - LinkedIn: [Muhammad Hamza](https://www.linkedin.com/in/muhammad-hamza-7239b9237/)
 
 - **Usman Umar Garba**

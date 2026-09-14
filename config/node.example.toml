@@ -2,6 +2,7 @@
 # Infernos Node Configuration (Example)
 # ==============================================================================
 
+# [server]
 # The host address to bind the Infernos L402 Gate to.
 # Default: "0.0.0.0" (Listens on all interfaces)
 host = "0.0.0.0"
@@ -10,10 +11,12 @@ host = "0.0.0.0"
 # Default: 8080
 port = 8080
 
+# [upstream]
 # The URL of the upstream inference engine (e.g., Ollama or vLLM).
 # Default: "http://127.0.0.1:11434" (Ollama default port)
 upstream_url = "http://127.0.0.1:11434"
 
+# [pricing]
 # The default price per inference request, specified in Satoshis (sats).
 # Default: 10
 default_price_sats = 10
