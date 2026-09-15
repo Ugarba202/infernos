@@ -173,6 +173,24 @@ Any existing agent framework (LangChain, AutoGen, CrewAI, or official OpenAI SDK
 
 ---
 
+## Team
+
+- **Muhammad Hamza**
+  - Email: [hamza.00dev1@gmail.com](mailto:hamza.00dev1@gmail.com)
+  - GitHub: [@Hamza1610](https://github.com/Hamza1610)
+  - LinkedIn: [Muhammad Hamza](https://www.linkedin.com/in/muhammad-hamza-7239b9237/)
+
+- **Usman Umar Garba**
+  - Email: [ugarba202@gmail.com](mailto:ugarba202@gmail.com)
+  - GitHub: [@Ugarba202](https://github.com/Ugarba202)
+  - LinkedIn: [Usman Umar Garba](https://www.linkedin.com/in/usman-umar-garba/)
+
+- **Mubarak Abdullateef**
+  - GitHub: [@TechLateef](https://github.com/TechLateef)
+  - LinkedIn: [Mubarak Abdullateef](https://www.linkedin.com/in/mubarak-abdullateef/)
+
+---
+
 ## License
 
 Licensed under the MIT License ([LICENSE](LICENSE)).
