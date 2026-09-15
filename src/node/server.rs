@@ -13,8 +13,8 @@ impl InfernosServer {
     pub async fn run(&self) -> Result<()> {
         tracing::info!(
             "Starting Infernos Node on {}:{}",
-            self.config.host,
-            self.config.port
+            self.config.server.host,
+            self.config.server.port
         );
         Ok(())
     }

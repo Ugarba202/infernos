@@ -2,7 +2,7 @@
 # Infernos Node Configuration (Example)
 # ==============================================================================
 
-# [server]
+[server]
 # The host address to bind the Infernos L402 Gate to.
 # Default: "0.0.0.0" (Listens on all interfaces)
 host = "0.0.0.0"
@@ -11,12 +11,25 @@ host = "0.0.0.0"
 # Default: 8080
 port = 8080
 
-# [upstream]
+[upstream]
 # The URL of the upstream inference engine (e.g., Ollama or vLLM).
-# Default: "http://127.0.0.1:11434" (Ollama default port)
-upstream_url = "http://127.0.0.1:11434"
+# Default: "http://127.0.0.1:11434"
+url = "http://127.0.0.1:11434"
 
-# [pricing]
+[pricing]
 # The default price per inference request, specified in Satoshis (sats).
 # Default: 10
 default_price_sats = 10
+
+[lightning]
+# Lightning backend type: "mock", "lnd", or "nwc"
+# Default: "mock" (in-memory simulator for local testing)
+backend = "mock"
+
+# LND Configuration (required if backend = "lnd")
+# lnd_rpc_host = "localhost:10009"
+# lnd_macaroon_path = "~/.lnd/data/chain/bitcoin/mainnet/admin.macaroon"
+# lnd_tls_cert_path = "~/.lnd/tls.cert"
+
+# Nostr Wallet Connect Configuration (required if backend = "nwc")
+# nwc_uri = "nostr+walletconnect://..."
