@@ -46,14 +46,12 @@ pub async fn new_session(
     let session_id = SessionId(uuid);
 
     // Register session in the budget manager
-    state
-        .budget_manager
-        .open_session(&session_id, budget)
-        .await;
+    state.budget_manager.open_session(&session_id, budget).await;
 
     // Mint macaroon with session caveats
     let caveats = vec![
         Caveat::Session(uuid.to_string()),
+        Caveat::Budget(payload.budget_sats),
     ];
     let macaroon = state
         .macaroon_service
@@ -70,7 +68,11 @@ pub async fn new_session(
         challenge.to_header_value().parse().unwrap(),
     );
 
-    Ok((StatusCode::PAYMENT_REQUIRED, headers, Json(json!({"status": "payment_required"}))))
+    Ok((
+        StatusCode::PAYMENT_REQUIRED,
+        headers,
+        Json(json!({"status": "payment_required"})),
+    ))
 }
 
 pub async fn chat_completions(
@@ -80,34 +82,72 @@ pub async fn chat_completions(
 ) -> Result<impl IntoResponse, Error> {
     let auth_header = headers.get("Authorization");
     if auth_header.is_none() {
-        return Err(Error::PaymentRequired {
-            invoice: "".to_string(),
-            token: "".to_string(),
-        });
+        return Err(Error::SessionRequired);
     }
 
     let auth_str = auth_header.unwrap().to_str().unwrap_or("");
-    
-    // Default model requirement if we extract it, but let's pass None for now to avoid complexity in this step
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-    
-    let _credentials = L402Verifier::verify_header(
+
+    let req_model = payload.get("model").and_then(|m| m.as_str());
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let credentials = L402Verifier::verify_header(
         &state.macaroon_service,
         &*state.lightning,
         auth_str,
-        None,
+        req_model,
         now,
     )
     .await
     .map_err(|_| Error::VerificationFailed("Invalid L402 credentials".to_string()))?;
 
-    // Proxy the request
-    let proxy_resp = state
-        .proxy
-        .forward_chat_completion_with_headers(payload, headers)
-        .await?;
+    // Extract session caveat
+    let (session_opt, _) =
+        crate::node::gate::SessionBudgetManager::extract_session_caveats(&credentials.macaroon);
+    let session_id = session_opt
+        .ok_or_else(|| Error::VerificationFailed("Missing Session caveat".to_string()))?;
 
-    Ok(Json(proxy_resp))
+    // Debit budget
+    let cost = state.config.pricing.default_price_sats;
+    let remaining = state
+        .budget_manager
+        .debit_session(&session_id, cost)
+        .await
+        .map_err(|e| Error::BudgetExhausted(e.to_string()))?;
+
+    let is_stream = payload
+        .get("stream")
+        .and_then(|s| s.as_bool())
+        .unwrap_or(false);
+
+    let mut response_headers = HeaderMap::new();
+    response_headers.insert(
+        "X-Infernos-Remaining-Budget-Sats",
+        remaining.0.to_string().parse().unwrap(),
+    );
+
+    if is_stream {
+        let stream = state.proxy.stream_chat_completion(payload).await?;
+        let body = axum::body::Body::from_stream(stream);
+        let mut resp = body.into_response();
+        resp.headers_mut().extend(response_headers);
+        resp.headers_mut()
+            .insert("content-type", "text/event-stream".parse().unwrap());
+        Ok(resp)
+    } else {
+        // Proxy the request
+        let proxy_resp = state
+            .proxy
+            .forward_chat_completion_with_headers(payload, headers)
+            .await?;
+
+        let mut resp = Json(proxy_resp).into_response();
+        resp.headers_mut().extend(response_headers);
+        Ok(resp)
+    }
 }
 
 // Error Mapping for Axum
@@ -118,12 +158,20 @@ impl IntoResponse for Error {
                 let challenge = format!("L402 macaroon=\"{}\", invoice=\"{}\"", token, invoice);
                 let mut headers = HeaderMap::new();
                 headers.insert("WWW-Authenticate", challenge.parse().unwrap());
-                return (StatusCode::PAYMENT_REQUIRED, headers, Json(json!({"error": self.to_string()}))).into_response();
-            },
+                return (
+                    StatusCode::PAYMENT_REQUIRED,
+                    headers,
+                    Json(json!({"error": self.to_string()})),
+                )
+                    .into_response();
+            }
+            Error::SessionRequired => (StatusCode::PAYMENT_REQUIRED, self.to_string()),
             Error::VerificationFailed(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
             Error::BudgetExhausted(_) => (StatusCode::PAYMENT_REQUIRED, self.to_string()), // Or 403
             Error::Upstream(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
-            Error::Config(_) | Error::Lightning(_) | Error::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            Error::Config(_) | Error::Lightning(_) | Error::Internal(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
         };
         (status, Json(json!({"error": err_msg}))).into_response()
     }

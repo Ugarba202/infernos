@@ -2,11 +2,11 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use infernos::config::schema::{NodeConfig, PricingConfig};
 use infernos::node::api::routes::create_routes;
 use infernos::node::api::AppState;
-use infernos::config::schema::{NodeConfig, PricingConfig};
+use infernos::node::gate::{MacaroonService, SessionBudgetManager};
 use infernos::node::lightning::backend::MockLightningBackend;
-use infernos::node::gate::{SessionBudgetManager, MacaroonService};
 use infernos::node::proxy::openai::OpenAiProxy;
 use serde_json::json;
 use std::sync::{Arc, Mutex};
@@ -37,28 +37,37 @@ impl<'a> MakeWriter<'a> for SharedBuffer {
 
 fn setup_app() -> axum::Router {
     let config = NodeConfig {
-        server: infernos::config::schema::ServerConfig { host: "127.0.0.1".to_string(), port: 8080 },
-        pricing: PricingConfig { default_price_sats: infernos::common::types::Satoshis(10) },
+        server: infernos::config::schema::ServerConfig {
+            host: "127.0.0.1".to_string(),
+            port: 8080,
+        },
+        pricing: PricingConfig {
+            default_price_sats: infernos::common::types::Satoshis(10),
+        },
         upstream: infernos::config::schema::UpstreamConfig {
             url: "http://localhost:8080".to_string(),
         },
         lightning: infernos::config::schema::LightningConfig::default(),
+        data_dir: ".infernos_test_data".to_string(),
     };
 
     let proxy = OpenAiProxy::new(config.upstream.url.clone());
-    
+
     let state = AppState {
         config: Arc::new(config),
         lightning: Arc::new(MockLightningBackend::new()),
         budget_manager: Arc::new(SessionBudgetManager::new()),
-        macaroon_service: Arc::new(MacaroonService::new(b"test-secret-key-0000000000000000".to_vec(), "infernos-node")),
+        macaroon_service: Arc::new(MacaroonService::new(
+            b"test-secret-key-0000000000000000".to_vec(),
+            "infernos-node",
+        )),
         proxy,
     };
-    
-    create_routes(state)
-        .layer(TraceLayer::new_for_http().make_span_with(
-            tower_http::trace::DefaultMakeSpan::new().include_headers(false)
-        ))
+
+    create_routes(state).layer(
+        TraceLayer::new_for_http()
+            .make_span_with(tower_http::trace::DefaultMakeSpan::new().include_headers(false)),
+    )
 }
 
 #[tokio::test]

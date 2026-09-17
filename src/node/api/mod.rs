@@ -1,11 +1,11 @@
 pub mod handlers;
 pub mod routes;
 
-use std::sync::Arc;
 use crate::config::schema::NodeConfig;
+use crate::node::gate::{MacaroonService, SessionBudgetManager};
 use crate::node::lightning::backend::LightningBackend;
-use crate::node::gate::{SessionBudgetManager, MacaroonService};
 use crate::node::proxy::openai::OpenAiProxy;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {

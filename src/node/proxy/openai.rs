@@ -1,8 +1,8 @@
 use crate::common::error::Result;
+use futures_util::Stream;
 use reqwest::Client;
 use serde_json::Value;
 use std::time::Duration;
-use futures_util::Stream;
 
 #[derive(Clone)]
 pub struct OpenAiProxy {
@@ -20,7 +20,10 @@ impl OpenAiProxy {
 
     pub fn new_with_timeout(upstream_url: impl Into<String>, timeout: Duration) -> Self {
         Self {
-            client: Client::builder().timeout(timeout).build().unwrap_or_default(),
+            client: Client::builder()
+                .timeout(timeout)
+                .build()
+                .unwrap_or_default(),
             upstream_url: upstream_url.into(),
         }
     }
@@ -44,7 +47,7 @@ impl OpenAiProxy {
         headers: http::HeaderMap,
     ) -> Result<Value> {
         let url = format!("{}/v1/chat/completions", self.upstream_url);
-        
+
         let mut req_headers = reqwest::header::HeaderMap::new();
         for (k, v) in headers.iter() {
             let key_str = k.as_str().to_lowercase();
@@ -53,7 +56,7 @@ impl OpenAiProxy {
                 req_headers.insert(k.clone(), v.clone());
             }
         }
-        
+
         // Ensure Content-Type is set
         if !req_headers.contains_key("content-type") {
             req_headers.insert("content-type", "application/json".parse().unwrap());
@@ -70,7 +73,10 @@ impl OpenAiProxy {
                 if e.is_timeout() {
                     crate::common::error::Error::Upstream(format!("Upstream timeout: {}", e))
                 } else {
-                    crate::common::error::Error::Upstream(format!("Upstream connection error: {}", e))
+                    crate::common::error::Error::Upstream(format!(
+                        "Upstream connection error: {}",
+                        e
+                    ))
                 }
             })?;
 
@@ -86,9 +92,9 @@ impl OpenAiProxy {
             )));
         }
 
-        resp.json::<Value>()
-            .await
-            .map_err(|e| crate::common::error::Error::Upstream(format!("Upstream JSON parse error: {}", e)))
+        resp.json::<Value>().await.map_err(|e| {
+            crate::common::error::Error::Upstream(format!("Upstream JSON parse error: {}", e))
+        })
     }
 
     pub async fn stream_chat_completion(
@@ -105,7 +111,9 @@ impl OpenAiProxy {
             .json(&request)
             .send()
             .await
-            .map_err(|e| crate::common::error::Error::Upstream(format!("Upstream stream error: {}", e)))?;
+            .map_err(|e| {
+                crate::common::error::Error::Upstream(format!("Upstream stream error: {}", e))
+            })?;
 
         let status = resp.status();
         if !status.is_success() {

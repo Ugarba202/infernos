@@ -50,7 +50,7 @@ async fn test_proxy_forwards_required_upstream_headers() {
             .parse()
             .unwrap(),
     );
-    
+
     headers.insert("Content-Type", "application/json".parse().unwrap());
 
     let _response = proxy
@@ -104,7 +104,9 @@ async fn test_proxy_maps_upstream_error() {
         .mount(&mock_server)
         .await;
 
-    let result = proxy.forward_chat_completion(json!({"model": "test"})).await;
+    let result = proxy
+        .forward_chat_completion(json!({"model": "test"}))
+        .await;
 
     assert!(result.is_err());
 }
@@ -120,11 +122,15 @@ async fn test_proxy_handles_upstream_timeout() {
         .mount(&mock_server)
         .await;
 
-    let result = proxy.forward_chat_completion(json!({"model": "test"})).await;
+    let result = proxy
+        .forward_chat_completion(json!({"model": "test"}))
+        .await;
 
     assert!(result.is_err());
     let err_str = result.unwrap_err().to_string();
-    assert!(err_str.to_lowercase().contains("timeout") || err_str.to_lowercase().contains("deadline"));
+    assert!(
+        err_str.to_lowercase().contains("timeout") || err_str.to_lowercase().contains("deadline")
+    );
 }
 
 #[tokio::test]
@@ -152,7 +158,7 @@ async fn test_proxy_supports_streaming() {
         .expect("Failed to start stream");
 
     use futures_util::StreamExt;
-    
+
     let mut chunks = Vec::new();
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.expect("Stream error");
