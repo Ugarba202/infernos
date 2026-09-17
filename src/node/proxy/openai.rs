@@ -33,25 +33,93 @@ impl OpenAiProxy {
         &self.upstream_url
     }
 
-    pub async fn forward_chat_completion(&self, _request: Value) -> Result<Value> {
-        unimplemented!("Task 4.2 - Implement proxy forwarding")
+    pub async fn forward_chat_completion(&self, request: Value) -> Result<Value> {
+        self.forward_chat_completion_with_headers(request, http::HeaderMap::new())
+            .await
     }
 
     pub async fn forward_chat_completion_with_headers(
         &self,
-        _request: Value,
-        _headers: http::HeaderMap,
+        request: Value,
+        headers: http::HeaderMap,
     ) -> Result<Value> {
-        unimplemented!("Task 4.2 - Implement proxy forwarding with headers")
+        let url = format!("{}/v1/chat/completions", self.upstream_url);
+        
+        let mut req_headers = reqwest::header::HeaderMap::new();
+        for (k, v) in headers.iter() {
+            let key_str = k.as_str().to_lowercase();
+            // Drop authorization, but allow other safe headers
+            if key_str != "authorization" {
+                req_headers.insert(k.clone(), v.clone());
+            }
+        }
+        
+        // Ensure Content-Type is set
+        if !req_headers.contains_key("content-type") {
+            req_headers.insert("content-type", "application/json".parse().unwrap());
+        }
+
+        let resp = self
+            .client
+            .post(&url)
+            .headers(req_headers)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| {
+                if e.is_timeout() {
+                    crate::common::error::Error::Upstream(format!("Upstream timeout: {}", e))
+                } else {
+                    crate::common::error::Error::Upstream(format!("Upstream connection error: {}", e))
+                }
+            })?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            let err_text = resp
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown upstream error".to_string());
+            return Err(crate::common::error::Error::Upstream(format!(
+                "Upstream error ({}): {}",
+                status, err_text
+            )));
+        }
+
+        resp.json::<Value>()
+            .await
+            .map_err(|e| crate::common::error::Error::Upstream(format!("Upstream JSON parse error: {}", e)))
     }
 
     pub async fn stream_chat_completion(
         &self,
-        _request: Value,
+        request: Value,
     ) -> Result<impl Stream<Item = Result<bytes::Bytes>>> {
-        unimplemented!("Task 4.2 - Implement proxy streaming");
-        // Returning a dummy stream just to satisfy the type checker for unimplemented
-        #[allow(unreachable_code)]
-        Ok(futures_util::stream::empty())
+        let url = format!("{}/v1/chat/completions", self.upstream_url);
+
+        let resp = self
+            .client
+            .post(&url)
+            .header("content-type", "application/json")
+            .header("accept", "text/event-stream")
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| crate::common::error::Error::Upstream(format!("Upstream stream error: {}", e)))?;
+
+        let status = resp.status();
+        if !status.is_success() {
+            return Err(crate::common::error::Error::Upstream(format!(
+                "Upstream stream HTTP error: {}",
+                status
+            )));
+        }
+
+        use futures_util::StreamExt;
+        let stream = resp
+            .bytes_stream()
+            .map(|result| result.map_err(|e| crate::common::error::Error::Upstream(e.to_string())));
+
+        Ok(stream)
     }
 }
