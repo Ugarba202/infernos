@@ -180,3 +180,23 @@ impl IntoResponse for Error {
         (status, Json(json!({"error": err_msg}))).into_response()
     }
 }
+
+#[derive(Deserialize)]
+pub struct MockPayRequest {
+    pub invoice: String,
+}
+
+pub async fn mock_pay(
+    State(state): State<AppState>,
+    Json(payload): Json<MockPayRequest>,
+) -> Result<impl IntoResponse, Error> {
+    let preimage = state
+        .lightning
+        .pay_invoice(&payload.invoice)
+        .await
+        .map_err(|e| Error::Lightning(e.to_string()))?;
+
+    Ok(Json(json!({
+        "preimage": preimage
+    })))
+}

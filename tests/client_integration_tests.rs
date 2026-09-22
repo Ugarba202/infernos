@@ -52,6 +52,14 @@ impl LightningBackend for DeterministicNodeLightning {
         let settled = *self.is_settled.lock().await;
         Ok(settled)
     }
+
+    async fn pay_invoice(
+        &self,
+        _invoice: &str,
+    ) -> infernos::common::error::Result<String> {
+        *self.is_settled.lock().await = true;
+        Ok("0000000000000000000000000000000000000000000000000000000000000000".to_string())
+    }
 }
 
 /// A client-side payment provider that "pays" the deterministic invoice by returning the expected preimage
