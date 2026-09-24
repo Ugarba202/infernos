@@ -52,6 +52,7 @@ pub async fn new_session(
     let caveats = vec![
         Caveat::Session(uuid.to_string()),
         Caveat::Budget(payload.budget_sats),
+        Caveat::Capability("inference".to_string()),
     ];
     let macaroon = state
         .macaroon_service
@@ -103,6 +104,13 @@ pub async fn chat_completions(
     )
     .await
     .map_err(|_| Error::VerificationFailed("Invalid L402 credentials".to_string()))?;
+
+    // Authorization: enforce endpoint capability
+    if credentials.macaroon.capability().as_deref() != Some("inference") {
+        return Err(Error::Forbidden(
+            "Missing or invalid capability: requires 'inference'".to_string(),
+        ));
+    }
 
     // Extract session caveat
     let (session_opt, _) =
@@ -171,6 +179,7 @@ impl IntoResponse for Error {
             }
             Error::SessionRequired => (StatusCode::PAYMENT_REQUIRED, self.to_string()),
             Error::VerificationFailed(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
+            Error::Forbidden(_) => (StatusCode::FORBIDDEN, self.to_string()),
             Error::BudgetExhausted(_) => (StatusCode::PAYMENT_REQUIRED, self.to_string()), // Or 403
             Error::Upstream(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             Error::Config(_) | Error::Lightning(_) | Error::Internal(_) => {

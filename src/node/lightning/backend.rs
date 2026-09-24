@@ -41,10 +41,13 @@ impl MockLightningBackend {
 
     pub async fn simulate_payment(&self, payment_hash: &PaymentHash) {
         let mut lock = self.invoices.lock().await;
-        let entry = lock.entry(payment_hash.0.clone()).or_insert_with(|| MockInvoiceState {
-            preimage: "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
-            settled: false,
-        });
+        let entry = lock
+            .entry(payment_hash.0.clone())
+            .or_insert_with(|| MockInvoiceState {
+                preimage: "0000000000000000000000000000000000000000000000000000000000000000"
+                    .to_string(),
+                settled: false,
+            });
         entry.settled = true;
     }
 

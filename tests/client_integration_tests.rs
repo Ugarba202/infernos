@@ -53,10 +53,7 @@ impl LightningBackend for DeterministicNodeLightning {
         Ok(settled)
     }
 
-    async fn pay_invoice(
-        &self,
-        _invoice: &str,
-    ) -> infernos::common::error::Result<String> {
+    async fn pay_invoice(&self, _invoice: &str) -> infernos::common::error::Result<String> {
         *self.is_settled.lock().await = true;
         Ok("0000000000000000000000000000000000000000000000000000000000000000".to_string())
     }

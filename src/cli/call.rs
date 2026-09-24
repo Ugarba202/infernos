@@ -38,10 +38,7 @@ impl MockPaymentProvider {
 #[async_trait::async_trait]
 impl LightningPaymentProvider for MockPaymentProvider {
     async fn pay_invoice(&self, invoice: &str) -> Result<String, ClientError> {
-        let url = format!(
-            "{}/internal/mock/pay",
-            self.node_url.trim_end_matches('/')
-        );
+        let url = format!("{}/internal/mock/pay", self.node_url.trim_end_matches('/'));
 
         let response = self
             .http_client
@@ -67,14 +64,9 @@ impl LightningPaymentProvider for MockPaymentProvider {
             .await
             .map_err(|e| ClientError::Protocol(format!("JSON error: {}", e)))?;
 
-        body["preimage"]
-            .as_str()
-            .map(str::to_owned)
-            .ok_or_else(|| {
-                ClientError::Protocol(
-                    "Mock payment response missing preimage".to_string()
-                )
-            })
+        body["preimage"].as_str().map(str::to_owned).ok_or_else(|| {
+            ClientError::Protocol("Mock payment response missing preimage".to_string())
+        })
     }
 }
 
